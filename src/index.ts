@@ -1,54 +1,31 @@
-import { commands, CompleteResult, ExtensionContext, listManager, sources, window, workspace } from 'coc.nvim';
-import DemoList from './lists';
+import { languages, DocumentFilter, ExtensionContext } from 'vscode';
 
-export async function activate(context: ExtensionContext): Promise<void> {
-  window.showMessage(`coc-thrift-syntax-support works!`);
+import ThriftDefineProvider from './DefineProvider';
+import ThriftHoverProvider from './HoverProvider';
+import ThriftCompletionItemProvider from './CompletionProvider';
+
+export function activate(context: ExtensionContext) {
+  const langMode: DocumentFilter = { scheme: 'file', language: 'thrift' };
+  console.log('"thrift-syntax-support" is now active!');
 
   context.subscriptions.push(
-    commands.registerCommand('coc-thrift-syntax-support.Command', async () => {
-      window.showMessage(`coc-thrift-syntax-support Commands works!`);
-    }),
-
-    listManager.registerList(new DemoList(workspace.nvim)),
-
-    sources.createSource({
-      name: 'coc-thrift-syntax-support completion source', // unique id
-      doComplete: async () => {
-        const items = await getCompletionItems();
-        return items;
-      },
-    }),
-
-    workspace.registerKeymap(
-      ['n'],
-      'thrift-syntax-support-keymap',
-      async () => {
-        window.showMessage(`registerKeymap`);
-      },
-      { sync: false }
-    ),
-
-    workspace.registerAutocmd({
-      event: 'InsertLeave',
-      request: true,
-      callback: () => {
-        window.showMessage(`registerAutocmd on InsertLeave`);
-      },
-    })
+    languages.registerDefinitionProvider(
+      langMode,
+      new ThriftDefineProvider()
+    )
   );
-}
 
-async function getCompletionItems(): Promise<CompleteResult> {
-  return {
-    items: [
-      {
-        word: 'TestCompletionItem 1',
-        menu: '[coc-thrift-syntax-support]',
-      },
-      {
-        word: 'TestCompletionItem 2',
-        menu: '[coc-thrift-syntax-support]',
-      },
-    ],
-  };
+  context.subscriptions.push(
+    languages.registerHoverProvider(
+      langMode,
+      new ThriftHoverProvider()
+    )
+  );
+  
+  context.subscriptions.push(
+    languages.registerCompletionItemProvider(
+      langMode,
+      new ThriftCompletionItemProvider(),
+    )
+  );
 }
