@@ -1,40 +1,39 @@
-import { DefinitionProvider, TextDocument, Position, CancellationToken, Location, Uri, Range } from 'vscode';
+import { DefinitionProvider, TextDocument, Position, CancellationToken, Location, Uri, Range , workspace} from 'coc.nvim';
 import {
   parse,
   SyntaxType,
   TextLocation,
 } from '@creditkarma/thrift-parser';
-import { genRange, ASTHelper } from './utils';
-
-const genPosByShift = (pos: Position, shift = 0) => pos.with(pos.line, pos.character + shift);
+import { genRange, ASTHelper, getFilePathFromDocument, genPosByShift} from './utils';
 
 class ThriftDefineProvider implements DefinitionProvider {
   genLocation(loc: TextLocation, filePath: string) {
     return Promise.resolve(
-      new Location(
-        Uri.file(filePath),
+      Location.create(
+        Uri.file(filePath).toString(),
         genRange(loc)
       )
     );
   }
 
   provideDefinition(document: TextDocument, position: Position, token: CancellationToken): Thenable<Location | null> {
-    const wordRange = document.getWordRangeAtPosition(position);
+    const doc = workspace.getDocument(document.uri)
+    const wordRange = doc.getWordRangeAtPosition(position);
     const word = document.getText(wordRange);
     let prevWord = '';
     const leftCharacter = document.getText(
-      new Range(
+      Range.create(
         genPosByShift(wordRange.start, -1),
         wordRange.start)
     );
     if (leftCharacter && leftCharacter === '.') {
-      const prevWordRange = document.getWordRangeAtPosition(
+      const prevWordRange = doc.getWordRangeAtPosition(
         genPosByShift(wordRange.start, -2)
       );
       prevWord = document.getText(prevWordRange);
     }
     const rawFile = document.getText();
-    const processor = (raw: string, filePath?: string): Thenable<Location | null> => {
+    const processor = (raw: string, filePath: string): Thenable<Location | null> => {
       const thriftParseResult = parse(raw);
       if (thriftParseResult.type !== SyntaxType.ThriftDocument) {
         return Promise.resolve(null);
@@ -57,9 +56,9 @@ class ThriftDefineProvider implements DefinitionProvider {
       const pathItem = includeNodeList.find(item => item.fileName === word);
       if (pathItem) {
         return Promise.resolve(
-          new Location(
-            Uri.file(pathItem.filePath),
-            new Position(0, 0)
+          Location.create(
+            Uri.file(pathItem.filePath).toString(),
+            Range.create(0, 0, 0, 0)
           )
         );
       }
@@ -74,7 +73,7 @@ class ThriftDefineProvider implements DefinitionProvider {
       }
       return Promise.resolve(null);
     };
-    return processor(rawFile, document.fileName);
+    return processor(rawFile, getFilePathFromDocument(document));
   }
 }
 

@@ -24,6 +24,7 @@
     "semi": true
   },
   "devDependencies": {
+    "@types/node": "^15.0.1",
     "@typescript-eslint/eslint-plugin": "^4.8.2",
     "@typescript-eslint/parser": "^4.8.2",
     "coc.nvim": "^0.0.80",
@@ -56,5 +57,8 @@
         "title": "coc-thrift-syntax-support command title"
       }
     ]
+  },
+  "dependencies": {
+    "@creditkarma/thrift-parser": "^1.2.0"
   }
 }

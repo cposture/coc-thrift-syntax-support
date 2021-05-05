@@ -1,12 +1,12 @@
-import { languages, DocumentFilter, ExtensionContext } from 'vscode';
+import { languages, DocumentFilter, ExtensionContext } from 'coc.nvim';
 
 import ThriftDefineProvider from './DefineProvider';
 import ThriftHoverProvider from './HoverProvider';
 import ThriftCompletionItemProvider from './CompletionProvider';
 
 export function activate(context: ExtensionContext) {
-  const langMode: DocumentFilter = { scheme: 'file', language: 'thrift' };
-  console.log('"thrift-syntax-support" is now active!');
+  const langMode: DocumentFilter[] = [{ scheme: 'file', language: 'thrift' }];
+  context.logger.info('"thrift-syntax-support" is now active!');
 
   context.subscriptions.push(
     languages.registerDefinitionProvider(
@@ -18,14 +18,16 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     languages.registerHoverProvider(
       langMode,
-      new ThriftHoverProvider()
+      new ThriftHoverProvider(context.logger)
     )
   );
   
   context.subscriptions.push(
     languages.registerCompletionItemProvider(
-      langMode,
-      new ThriftCompletionItemProvider(),
+      "coc-thrift-syntax-support",
+      "coc-thrift-syntax-support",
+      "thrift",
+      new ThriftCompletionItemProvider(context.logger),
     )
   );
 }

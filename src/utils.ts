@@ -1,4 +1,4 @@
-import { Position, Range, TextDocument, workspace } from 'vscode';
+import { Position, Range, TextDocument, workspace } from 'coc.nvim';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
@@ -8,6 +8,12 @@ import {
   TextLocation,
   IncludeDefinition,
 } from '@creditkarma/thrift-parser';
+
+export const getFilePathFromDocument = (doc: TextDocument) => {
+    return doc.uri.substr("file://".length)
+}
+
+export const genPosByShift = (pos: Position, shift = 0) => Position.create(pos.line, pos.character + shift);
 
 export type filterFnType = (item: ThriftStatement, index: number) => any;
 
@@ -38,15 +44,15 @@ export const includeNodeFilter = () =>
 
 export const genRange = (loc: TextLocation) => {
   const { start, end } = loc;
-  const startPosition = new Position(
+  const startPosition = Position.create(
     genZeroBasedNum(start.line),
     genZeroBasedNum(start.column)
   );
-  const endPosition = new Position(
+  const endPosition = Position.create(
     genZeroBasedNum(end.line),
     genZeroBasedNum(end.column)
   );
-  return new Range(startPosition, endPosition);
+  return Range.create(startPosition, endPosition);
 };
 
 interface IncludeNode extends IncludeDefinition {
@@ -75,12 +81,15 @@ export class ASTHelper {
     return filter(includeNodeFilter()).map(item => {
       const { value } = item.path;
       const thriftRoot = workspace.getConfiguration('thrift').get<string>('root')
-          || path.dirname(document.fileName);
+          || path.dirname(getFilePathFromDocument(document));
       const filePath = path.resolve(thriftRoot, value);
       const rebuildNode = ({
-        ...item,
         filePath,
         fileName: path.parse(value).name,
+        comments: item.comments,
+        path: item.path,
+        loc: item.loc,
+        type: item.type,
       });
       try {
         (rebuildNode as IncludeNode).raw = fs.readFileSync(filePath, { encoding: 'utf8' });
